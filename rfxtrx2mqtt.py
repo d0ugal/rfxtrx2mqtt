@@ -1,11 +1,11 @@
 import binascii
-import time
 import json
+import time
 
-import yaml
 import paho.mqtt.client as mqtt
 import RFXtrx as rfxtrxmod
 import RFXtrx.lowlevel as lowlevel
+import yaml
 
 CLIENT_ID = "rfxtrx2mqtt"
 
@@ -52,9 +52,26 @@ def event_callback(event):
 
     publish(topic, payload)
 
+
 def load_config():
     with open("config.yaml") as f:
-        return yaml.load(f)
+        return yaml.safe_load(f)
+
+
+def _config(name, value):
+    if name == "Temperature":
+        return {"device_class": "temperature"}, value
+    if name == "Humidity":
+        return {"device_class": "humidity"}, value
+    if name == "Battery numeric":
+        return {"device_class": "battery"}, value
+    if name == "Rssi numeric":
+        return {"device_class": "signal_strength"}, value
+
+    if name in ("Command", "Humidity status", "Humidity status numeric"):
+        return name, value
+
+    print(f"No handling for {name}: {value}")
 
 
 def setup(config):
@@ -68,37 +85,51 @@ def setup(config):
     )
     publish(topic, payload)
 
-    for pkt, config in config['devices'].items():
-        pkt = lowlevel.parse(bytearray.fromhex(pkt))
+    for bytes, config in config["devices"].items():
+        print(config)
+        pkt = lowlevel.parse(bytearray.fromhex(bytes))
+        if pkt is None:
+            raise Exception(f"Packet not valid? {pkt}")
+
+        if isinstance(pkt, lowlevel.SensorPacket):
+            obj = rfxtrxmod.SensorEvent(pkt)
+        elif isinstance(pkt, lowlevel.Status):
+            obj = rfxtrxmod.StatusEvent(pkt)
+        else:
+            obj = rfxtrxmod.ControlEvent(pkt)
+
         id = _id(pkt)
         if isinstance(config, str):
             config = {"name": config}
         _REGISTRY[id] = config
 
-        topic = "homeassistant/{domain}/{entity_id}/config"
-        payload = _payload(
-            {
-                "name": f"{config['name']}",
-                "unique_id": id,
-                "unit_of_measurement": "",
-                "device_class": "",
-                "state_topic": "homeassistant/{domain}/{entity_id}/state",
-            }
-        )
-        publish(topic, payload)
+        print(repr(obj.values))
+
+        for name, value in obj.values.items():
+            name, value = _config(name, value)
+            topic = "homeassistant/{domain}/{entity_id}/config"
+            payload = _payload(
+                {
+                    "name": f"{config['name']}",
+                    "unique_id": id,
+                    "unit_of_measurement": "",
+                    "device_class": "",
+                    "state_topic": "homeassistant/{domain}/{entity_id}/state",
+                }
+            )
+            publish(topic, payload)
 
 
 def main():
     print("RFXTRX2MQTT")
     config = load_config()
 
-
     device = "/dev/ttyUSB0"
     rfx_object = rfxtrxmod.Connect(device, None, debug=True)
 
-    HOSTNAME = config['mqtt']['host']
-    USERNAME = config['mqtt']['username']
-    PASSWORD = config['mqtt']['password']
+    HOSTNAME = config["mqtt"]["host"]
+    USERNAME = config["mqtt"]["username"]
+    PASSWORD = config["mqtt"]["password"]
 
     mqttc.username_pw_set(USERNAME, PASSWORD)
     mqttc.connect(host=HOSTNAME)
