@@ -1,0 +1,8 @@
+devices:
+    'packet': device name
+    'packet':
+        name: device name
+mqtt:
+    host: hostname
+    username: username
+    password: password

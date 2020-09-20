@@ -1,0 +1,8 @@
+version: "3.8"
+
+services:
+  rfxtrx2mqtt:
+    build: .
+    devices:
+        - '/dev/serial/by-id/usb-RFXCOM_RFXtrx433_A1WYT9NA-if00-port0:/dev/ttyUSB0'
+
