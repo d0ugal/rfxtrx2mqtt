@@ -8,4 +8,4 @@ WORKDIR /app
 
 ENV PYTHONPATH "${PYTHONPATH}:/app"
 
-CMD ["python", "-u", "rfxtrx2mqtt.py"]
+CMD ["python", "-u", "src/rfxtrx2mqtt.py"]
