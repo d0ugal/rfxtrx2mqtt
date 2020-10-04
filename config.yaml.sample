@@ -1,11 +1,11 @@
 debug: true
-prefix: homeassistant
 devices:
     'packet': device name
     'packet':
         name: device name
 publish_unknown: False
 mqtt:
+    prefix: homeassistant
     host: hostname
     username: username
     password: password
