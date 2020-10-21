@@ -1,3 +1,5 @@
 black
 isort
 pyflakes
+pytest
+pytest-cov

@@ -4,7 +4,6 @@ import logging
 import sys
 import time
 from dataclasses import dataclass
-from datetime import datetime
 
 import paho.mqtt.client as mqtt
 import RFXtrx as rfxtrxmod
@@ -118,7 +117,7 @@ def mqtt_publish(topic_prefix, topic, payload):
 def bytes_to_pkt(bytes):
     pkt = lowlevel.parse(bytearray.fromhex(bytes))
     if pkt is None:
-        raise Exception(f"Packet not valid? {pkt}")
+        raise ValueError(f"Packet not valid; {pkt}")
     return pkt
 
 
@@ -202,10 +201,17 @@ def handle_unknown_devices(config, event):
 
 def event_callback(config, event):
 
+    LOG.debug("Event data: " + "".join(f"{x:02x}" for x in event.data))
+
     if not event.device.id_string:
         return
 
-    if isinstance(event, (rfxtrxmod.StatusEvent, rfxtrxmod.ControlEvent)):
+    if isinstance(event, rfxtrxmod.StatusEvent):
+        LOG.warning("Ignoring status event")
+        return
+
+    if isinstance(event, rfxtrxmod.ControlEvent):
+        LOG.warning("Ignoring control event")
         return
 
     id = pkt_to_id(event.pkt)
@@ -250,8 +256,8 @@ def setup_devices(config):
             mqtt_publish(config["mqtt"]["prefix"], entity.config_topic, payload)
 
 
-def load_config():
-    with open("config.yaml") as f:
+def load_config(config_file="config.yaml"):
+    with open(config_file) as f:
         return yaml.safe_load(f)
 
 
@@ -303,4 +309,4 @@ if __name__ == "__main__":
     try:
         main()
     except:
-        LOG.exception("Crash")
+        LOG.exception("Critical failure.")
