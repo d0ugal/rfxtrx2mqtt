@@ -277,11 +277,12 @@ def setup_logging(config):
 
 def mqtt_connect(config):
     HOSTNAME = config["mqtt"]["host"]
+    MQTTPORT = config["mqtt"]["port"]
     USERNAME = config["mqtt"]["username"]
     PASSWORD = config["mqtt"]["password"]
 
     mqttc.username_pw_set(USERNAME, PASSWORD)
-    mqttc.connect(host=HOSTNAME)
+    mqttc.connect(host=HOSTNAME, port=MQTTPORT)
 
 
 def main():
@@ -296,7 +297,7 @@ def main():
     setup_devices(config)
 
     LOG.info("Waiting for events")
-    device = "/dev/ttyUSB0"
+    device = config["serialdevice"]
     # Threads be running with this callback.
     rfx_object = rfxtrxmod.Connect(
         device, functools.partial(event_callback, config), debug=True

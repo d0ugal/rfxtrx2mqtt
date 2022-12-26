@@ -1,4 +1,5 @@
 debug: true
+serialdevice: /dev/ttyUSB0
 devices:
     'packet': device name
     'packet':
@@ -7,5 +8,6 @@ publish_unknown: False
 mqtt:
     prefix: homeassistant
     host: hostname
+    port: 1883
     username: username
     password: password
